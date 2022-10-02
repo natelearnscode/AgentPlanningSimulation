@@ -10,12 +10,16 @@ export class Agent {
         this.startPos = new THREE.Vector2(0,0);
         this.goalPos = new THREE.Vector2(5,5);
         this.radius = 1;
+        this.id = -1;
 
         // create mesh
         this.geometry = new THREE.CapsuleGeometry( 5, 10, 4, 8 );
-        this.material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+        let randomColor = new THREE.Color(THREE.MathUtils.randFloat(100, 255) / 255, THREE.MathUtils.randFloat(100, 255) / 255, THREE.MathUtils.randFloat(100, 255) / 255);
+        this.material = new THREE.MeshLambertMaterial( { color: randomColor } );
+
         this.mesh = new THREE.Mesh( this.geometry, this.material );
         this.mesh.castShadow = true;
+        this.mesh.receiveShadow = true;
 
         this.mesh.position.set(this.pos.x, this.upVectorValue, this.pos.y);
 
@@ -27,11 +31,12 @@ export class Agent {
         this.pathArrowHelpers = []; //list of arrows used to visualize path
 
         //TCC attributes
-        this.accelaration = 1;
-        this.velocity = 1;
-        this.k_goal = 5;  //TODO: Tune this parameter to agent stop naturally on their goals
+        this.currentGoal = new THREE.Vector2(); // current goal in path
+        this.accelaration = new THREE.Vector2();
+        this.velocity = new THREE.Vector2();
+        this.k_goal = 50;  //TODO: Tune this parameter to agent stop naturally on their goals
         this.k_avoid = 100;
-        this.goalSpeed = 100;
+        this.goalSpeed = 200;
     }
 
     // resets the agents state
@@ -41,6 +46,11 @@ export class Agent {
         this.neighbors = [];
         this.path = [];
         this.pathArrowHelpers = []; //list of arrows used to visualize path
+        this.currentNodeIndex = -1;
+
+        this.currentGoal = new THREE.Vector2(); // current goal in path
+        this.accelaration = new THREE.Vector2();
+        this.velocity = new THREE.Vector2();
     }
 
     // returns a random position by sampling points that don't lie within an obstacle
@@ -58,7 +68,7 @@ export class Agent {
     initStartAndGoalPos(circlePos, circleRad, numObstacles, width, height) {
         console.log("initializing start and goal for agent");
         // add radius of agent to each obstacle radius
-        let radiiAdded = circleRad;
+        let radiiAdded = [...circleRad];
         for(let i =0; i < numObstacles; i++) {
             radiiAdded[i] += this.radius;
         }
@@ -74,7 +84,7 @@ export class Agent {
     generatePRM(numNodes, circleCenters, circleRadii, numObstacles, width, height) {
         console.log("generating PRM");
         // add radius of agent to each obstacle radius
-        let radiiAdded = circleRadii;
+        let radiiAdded = [...circleRadii];
         for(let i =0; i < numObstacles; i++) {
             radiiAdded[i] += this.radius;
         }
@@ -129,9 +139,6 @@ export class Agent {
         
         let startID = this.closestNode(centers, radii, numObstacles, this.startPos);
         let goalID = this.closestNode(centers, radii, numObstacles, this.goalPos);
-
-        console.log("closest start ", this.nodePos[startID]);
-        console.log("closest goal ", this.nodePos[goalID]);
 
         if (startID == -1 || goalID == -1) {
           path.add(0,-1);;
@@ -288,8 +295,64 @@ export class Agent {
         this.pathArrowHelpers.push(arrowHelper);
     }
 
-    computeAgentForces() {
+    computeAgentForces(agents, centers, radii, numObstacles) {
+        let acc = new THREE.Vector2(0,0);
+  
+        // calculate goal force
+        let goalVel = new THREE.Vector2(0,0);
+        goalVel.subVectors( this.currentGoal, this.pos);
 
+        // make sure we don't go over goal speed
+        if (goalVel.length() > this.goalSpeed) goalVel.clampLength(0, this.goalSpeed);
+        
+
+        let goalForce = new THREE.Vector2();
+        goalForce.subVectors(goalVel, this.velocity);
+
+        acc.add(goalForce.multiplyScalar(this.k_goal));
+
+        // check if there is clear path to next goal and go straight to it
+        let goToNextGoal = false;
+        if (this.path.length > 1) { // if next goal is in path
+            let dist = this.pos.distanceTo(this.nodePos[this.path[1]]);
+            let dir = new THREE.Vector2();
+            dir.subVectors(this.nodePos[this.path[1]],this.pos).normalize();
+            let circleListCheck = COLLISIONS.rayCircleListIntersect(centers, radii, numObstacles, this.pos, dir, dist);
+            //console.log(circleListCheck.hit);
+            if(!circleListCheck.hit) {
+                goToNextGoal = true;
+            }
+        }
+        else if (this.path.length == 1) { // if next goal is final goalpos
+            let dist = this.pos.distanceTo(this.goalPos);
+            let dir = new THREE.Vector2();
+            dir.subVectors(this.goalPos,this.pos).normalize();
+            let circleListCheck = COLLISIONS.rayCircleListIntersect(centers, radii, numObstacles, this.pos, dir, dist);
+            if(!circleListCheck.hit) {
+                goToNextGoal = true;
+            }            
+        }
+
+        // at goal or can go to next goal
+        if (goalVel.length() < 5 || goToNextGoal) { 
+            if(this.path.length != 0) {
+                this.path.shift();
+            }
+
+            return acc; //if within certain threshold no other force is applied
+        }
+
+        // TODO: Compute avoidance forces for other agents
+        for(let i = 0; i < agents.length; i++) {
+            if(i == this.id) continue;
+            let ttc = this.computeTTC(agents[i].pos,agents[i].velocity, agents[i].radius);
+            
+            //console.log(agents[i]);
+        }
+
+        // TODO: Compute avoidance force for obstacles
+
+        return acc;
     }
 
     moveAgent() {
@@ -297,11 +360,34 @@ export class Agent {
     }
 
     computeTTC() {
-
+        return 1;
     }
 
-    update(dt) {
-        
+    update(agents, centers, radii, numObstacles, dt) {
+        if(this.path.length == 0) { // going straight to goal
+            this.currentGoal = this.goalPos;
+        }
+        else {
+            this.currentGoal = this.nodePos[this.path[0]];
+        }
+
+        // add radius of agent to each obstacle radius
+        let radiiAdded = [...radii];
+        for(let i =0; i < numObstacles; i++) {
+            radiiAdded[i] += this.radius;
+        }
+
+        // compute agent acceleration
+        this.accelaration = this.computeAgentForces(agents, centers, radiiAdded, numObstacles);
+
+        // compute agent velocity
+        this.velocity.add(this.accelaration.multiplyScalar(dt)); // v = v_init + a * dt
+
+        // compute agent position
+        this.pos.add(this.velocity.multiplyScalar(dt)); // pos = pos_init + v * dt
+        this.mesh.position.setX(this.pos.x);
+        this.mesh.position.setZ(this.pos.y);
+
 
     }
 }
