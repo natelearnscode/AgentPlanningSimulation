@@ -1,4 +1,4 @@
-import * as THREE from './node_modules/three/build/three.module.js';
+import * as THREE from './three.module.js';
 
 //Returns true if the point is inside a circle
 //You must consider a point as colliding if it's distance is <= eps

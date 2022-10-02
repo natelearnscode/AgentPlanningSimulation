@@ -1,7 +1,6 @@
-import * as THREE from './node_modules/three/build/three.module.js';
-import { OrbitControls } from './node_modules/three/examples/js/controls/OrbitControls.js';
-import { GUI } from './node_modules/dat.gui/build/dat.gui.module.js';
-
+import * as THREE from './three.module.js';
+import { OrbitControls } from './OrbitControls.js';
+import { GUI } from './dat.gui.module.js';
 import { Agent } from './agent.js';
 
 let renderer, scene, camera, controls;
