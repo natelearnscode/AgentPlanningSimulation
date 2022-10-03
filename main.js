@@ -202,6 +202,21 @@ function setupThreejs() {
     // Create Floor
     floorGeometry = new THREE.BoxGeometry(parameters.width, 2, parameters.height);
     floorMaterial = new THREE.MeshLambertMaterial({color: "rgb(15, 150, 15)"});
+
+    // load floor texture
+    const texture = new THREE.TextureLoader().load('./Vol_42_1_Base_Color.png');
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set( 4, 4 );
+    floorMaterial.map = texture;
+
+    // load floor normal map texture
+    const normalTexture = new THREE.TextureLoader().load('./Vol_42_1_Normal.png');
+    normalTexture.wrapS = THREE.RepeatWrapping;
+    normalTexture.wrapT = THREE.RepeatWrapping;
+    normalTexture.repeat.set( 4, 4 );
+    floorMaterial.normalMap = normalTexture;
+
     floorMesh = new THREE.Mesh(floorGeometry, floorMaterial);
     floorMesh.receiveShadow = true;
 
@@ -309,7 +324,6 @@ function onClick( event ) {
                         break;
                     }
                 }
-                console.log("index is ", index);
                 //remove obstacle
                 obstacleGeometries.splice(index, 1);
                 obstacleMaterials.splice(index, 1);

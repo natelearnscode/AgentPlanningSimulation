@@ -11,40 +11,174 @@
 		</div>
 		<h2>Controls</h2>
 		<p>
-			Click and drag to move the camera around the origin.
-			Using middle mouse scroll or pinching on a touchpad zooms the camera in and out.
-			Use the settings on the right side of the screen to change the settings of the simulation and restart the simulation. 
+			<ul>
+				<li>
+					Click and drag to move the camera around the origin.
+					Using middle mouse scroll or pinching on a touchpad zooms the camera in and out.
+				</li>
+				<li>
+					Use the settings on the right side of the screen to change the settings of the simulation and restart the simulation. 
+				</li>
+				<li>
+					When edit mode is toggled on, you can left click to create a new obstacle or right click to remove and obstacle. The agents will respond in realtime.
+				</li>
+			</ul>
 
 		</p>
 		<hr>
 		<h1>Welcome</h1>
 		<p>This is my submission for my CSCI 5611 class's Project 1. The intended goal was to implement agents moving through a cluttered environment without colliding with eachother or any obstacles. I implmented planning with the A* planning algorithm on a Probablistic Roadmap (PRM) for each agent. To avoid collisions with other agents time to collide (TTC) forces were implemented. Above you can see and interact with a live demo of the working code.</p>
 		<hr>
+		<h2>Running Locally/Explanation of Files</h2>
+		<p>
+			If you want to run the code locally there are a few dependencies needed:
+			<ul>
+				<li>NPM (node package manager used to install dependencies)</li>
+				<li>NPX (used to run server and usually comes install with NPM I believe)</li>
+				<li>http-server (an NPM package used to serve the static files containing the app)</li>
+			</ul>
+			After installing npm you can run <b>"npm install http-server"</b> to install the http-server package.
+			Then by running the command <b>"npx http-server"</b> it should start a simple http server.
+			After doing this you should be able to go to http://127.0.0.1:8080 to view the application.
+			All the code I wrote is stored in the javascript files: main.js, agent.js, and collisionlibrary.js.
+			The external library files I used are: three.module.js, OrbitalControls.js, stats.js, and dat.gui.module.js. 
+
+		</p>
+		<hr>
 		<h2> Features Implemented </h2>
 		<ul>
 			<li>
 				<h3>Single Agent Navigation</h3>
-				<p>feature 1 description</p>
+				<p>
+						<b>Feature Description: </b>
+					<i>	Simulate a 2D agent moving through a cluttered 2D environment. The physical 
+					extent of the agent should be represented by a bounding geometry (e.g., bounding 
+					circle or bounding rectangle). As the agent moves through the environment, its 
+					bounding geometry should not overlap with any of the obstacles. To get full credit, 
+					the agent should move smoothly through the environment, without unnatural 
+					hesitation or large changes in speed.
+					</i>
+				</p>
+				<p>
+					All positions and movement are internally stored using 2D vectors, and all calculations assume that the agents and all obstacles lie on the same plane.
+					The bounding geometry used for both the agents and obstacles are circles.
+					The agents move to their goal by moving to each position in their planned path.
+					The approach I used for path planning was a PRM with A* as the planning algorithm.
+					I also implemented path smoothing such that if the agent can go immediately to the next node in it's path, it does so.
+					I implemented TTC forces to calculate the force needed to get to the current goal of the agent in its path, but unfortunately this means that the agent slows down when it nears each node in its path.
+					This causes the speed of the agent to fluctuate in a somewhat unnatural way.
+				</p>
 			</li>
 			<li>
 				<h3>3D Rendering & Camera: </h3>
-				<p>feature 1 description</p>
+				<p>
+					<b>Feature Description: </b>
+					<i>
+						Render your navigation example in 3D (only the rendering needs to be 3D, the 
+						navigation can be 2D). For full points the camera should be natural to use, the 
+						models easy to see, and the scene well-lit and with a clear sense of depth. Texturing 
+						your models, and using multiple light sources is a good way to achieve this highest 
+						level of visual quality
+					</i>
+				</p>
+				<p>
+					I used the ThreeJS library to render my scene in 3D in the browser.
+					The navigation calculations are internally done in 2D as all interactions are assume to happen on the same plane.
+					I used a hemisphere light and a point light to light up the entire scene.
+					I used the ThreeJS OrbitalControls camera control to allow for dragging and rotating the camera around the origin.
+				</p>
+			</li>
+			<li>
+				<h3>Improved Agent & Scene Rendering: </h3>
+				<p>
+					<b>Feature Description: </b>
+					<i>
+						Render the agent(s) using a model or image that is not a simple geometric shape, 
+						either with a 3D model, or a textured 2D quad. For full credit also render the 
+						obstacles in 3D or with images. Importantly, even if you draw complex obstacles, 
+						you should still use simplified (invisible) geometry for computing collisions. 
+					</i>
+				</p>
+				<p>
+					The floor, agents, and obstacles are all rendered in 3D using ThreeJS's built in geometries as a base for their meshes. 
+					Additionally, I textured the floor with a grass texture and normal map.
+					The original goal was to have a dense forest environment where all the obstacles were trees.
+					unfortunately, I was not able to implement importing models for the agents or obstacles in time, so I used capsules for the agents and cylinders for the obstacles.
+					I gave the obstacles a tan color to emulate tree bark, and I gave the agents random colors to differentiate from eachother.
+				</p>
 			</li>
 			<li>
 				<h3>User Scenario Editing: </h3>
-				<p>feature 1 description</p>
+				<p>
+					<b>Feature Description: </b>
+					<i>
+						Allow the user to edit the scene by placing agents and obstacles during set-up or 
+						runtime. For full points the scenario creation process should be natural and mouse-
+						based (or mouse + keyboard).
+					</i>
+				</p>
+				<p>
+					By using the Dat.Gui library, I was able to create a settings menu to allow for editing the parameters of the scene.
+					Each time the simulation is run, the agents and obstacles are randomly placed.
+					I didn't allow the user to place an agent, but they are able to place and remove obstacles if edit mode is turned on.
+					Edit mode can be toggled in the settings menu, and if turned on, during runtime left clicking can be used to place a new obstacle while right clicking removes one.
+				</p>
 			</li>
 			<li>
 				<h3>Realtime User Interaction: </h3>
-				<p>feature 1 description</p>
+				<p>
+					<b>Feature Description: </b>
+					<i>
+						Allow the user interaction directly with the simulation itself (beyond controlling the 
+						camera). To get full points, the user should have a clear, smooth, natural, and 
+						continuous way to interact with the agent/agents as they move through the 
+						environment. Discrete interactions such as toggling some behavior on/off will only 
+						receive a couple of points. Look for continuous interaction such as allowing the user 
+						to move an obstacle with the mouse during the simulation. 
+					</i>
+				</p>
+				<p>
+					I wasn't entirely sure if this counted for this feature, but edit mode allows for realtime user interaction with the agents.
+					When edit mode is turned, the user can either add or remove an obstacle in the scene during runtime.
+					If an obstacle is placed, the agents respond to the new obstacle by replanning a new path to their goal.
+					If an obstacle is removed, the agents respond by checking to see if they can take a shortcut due to path smoothing.
+				</p>
 			</li>
 			<li>
 				<h3>Multiple Agents Planning: </h3>
-				<p>feature 1 description</p>
+				<p>
+					<b>Feature Description: </b>
+					<i>
+						Support multiple agents moving simultaneously in the scene. All agents need to 
+						move towards their own independent goals, each with their own path planning 
+						(though the agents can share an underlying roadmap). [Agents do not need to avoid 
+						each other, unless you are going for the additional crowd simulation points below.] 
+					</i>
+				</p>
+				<p>
+					In the settings menu, the number of agents used for the simulation can be increased or decreased.
+					Each agent has their own independent goal with their own path planning.
+					I chose an arbitrary max number of agents of 10, but if running code locally this can be changed (along with all other max variables) by changing the constants at the top of main.js. 
+				</p>
 			</li>
 			<li>
 				<h3>Challenge - Crowd Simulation : </h3>
-				<p>feature 1 description</p>
+				<p>
+					<b>Feature Description: </b>
+					<i>
+						Have multiple agents plan paths that move simultaneously to their goals in a shared 
+						environment, while avoiding collisions both with each other and with the obstacles 
+						in the environment. Feel free to use whatever method you like for collision 
+						avoidance (boids, social forces, TTC force, etc). For full points the agents should 
+						display smooth, anticipatory, collision-free motion in at least two interesting 
+						scenarios -- so try to choose a technique where you can get good results. 
+					</i>
+				</p>
+				<p>
+					I implemented TTC forces to allow for avoidance of other agents in my environment. Although it seems like the math is correct, it is hard to tell if it is working correctly as intended.
+					I've ported over the code from processing to javascript, but in some scenarios it visually seems like there are collisions.
+					I tested by setting the environment width and height to small values, but I am unsure if the issues are due to not using the correct k_goal and k_avoid values while testing.
+				</p>
 			</li>
 		</ul>
 		<hr>
@@ -83,10 +217,27 @@
 						Then running npx http-server should start a server that serves all the files in the root directory.
 					</p>
 				</li>
+				<li>
+					<h3>Textures</h3>
+					<p>
+						Grass texture from  
+						<a href = "https://assetstore.unity.com/packages/2d/textures-materials/glass/stylized-grass-texture-153153">
+						https://assetstore.unity.com/packages/2d/textures-materials/glass/stylized-grass-texture-153153
+						</a>
+					</p> 
+				</li>
+				<!-- Low poly tree model from https://www.cgtrader.com/free-3d-models/plant/conifer/low-poly-3d-tree-model -->
 			</ul>
 		</p>
 		<hr>
 		<h2> Difficulties During Development </h2>
+		<p>
+			The initial set up of ThreeJS. 
+			Getting libraries to work.
+			Porting over code to javascript.
+			Testing code.
+			Timeframe and working alone.
+		</p>
 		<hr>
 		<h2> Video Showcasing Simulation </h2>
 		<footer class="mt-auto py-3 text-center text-lg-start">
