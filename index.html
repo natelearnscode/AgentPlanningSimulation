@@ -232,14 +232,30 @@
 		<hr>
 		<h2> Difficulties During Development </h2>
 		<p>
-			The initial set up of ThreeJS. 
-			Getting libraries to work.
-			Porting over code to javascript.
-			Testing code.
-			Timeframe and working alone.
+			Initally setting up ThreeJS took some time as I had run into difficulties.
+			Much of the library is written with the expectation that you have a server serving the javascript files necessary for the library to work.
+			Often times this would be done using a module bundler like webpack to bundle all the modules together.
+			Due to my lack of knowledge, I thought it would take too long to set up a proper server with module bundling, so I opted to make minor edits to the library files so that they work from the root directory instead of the node_modules directory.
+			I was able to get it working with the edits using the http-server npm pacckage.
+
+		</p>
+		<p>
+			Additionally, another area of difficulty was porting over the Java code from processing to javascript.
+			With Javascript being a language that is not strongly typed like Java, it was hard to debug some issues. 
+			I wouldn't always get errors when something wasn't working properly. This occured most often when porting over collision, TTC forces, and planning code. 
+			This is probably where most of my time was spent.
+
+		</p>
+		<p>
+			Lastly, there were many different features ideas I wanted to implemented, but I did not get to in time.
+			These included adding tree models for obstacles and adding a fountain with a particle system.
+
 		</p>
 		<hr>
 		<h2> Video Showcasing Simulation </h2>
+		<video width="800" height="450" controls>
+			<source src="./demonstration_video.mp4" type="video/mp4">
+		</video>
 		<footer class="mt-auto py-3 text-center text-lg-start">
             <!-- Copyright -->
             <div class="text-center p-3">
