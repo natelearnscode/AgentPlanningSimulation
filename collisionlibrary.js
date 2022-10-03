@@ -64,6 +64,35 @@ export function rayCircleIntersect(center, r, l_start, l_dir, max_t){
     return hit;
 }
   
+export function rayCircleIntersectTime(center, r, l_start, l_dir, max_t){
+  let hit = new hitInfo();
+  
+  //Step 2: Compute W - a displacement vector pointing from the start of the line segment to the center of the circle
+    let toCircle = new THREE.Vector2();
+    toCircle.subVectors(center, l_start);
+    
+    //Step 3: Solve quadratic equation for intersection point (in terms of l_dir and toCircle)
+    let a = 1;  //Length of l_dir (we normalized it)
+    let b = -2 * l_dir.dot(toCircle); //-2*dot(l_dir,toCircle)
+    let c = toCircle.lengthSq() - (r)*(r); //different of squared distances
+    
+    let d = b*b - 4*a*c; //discriminant 
+    if (d >=0 ){ 
+      //If d is positive we know the line is colliding, but we need to check if the collision line within the line segment
+      //  ... this means t will be between 0 and the length of the line segment
+      let t1 = (-b - Math.sqrt(d))/(2*a); //Optimization: we only need the first collision
+      let t2 = (-b + Math.sqrt(d))/(2*a); //Optimization: we only need the first collision
+      //println(hit.t,t1,t2);
+      if (t1 > 0){
+        hit.hit = true;
+        hit.t = t1;
+      }
+      
+    }
+    
+  return hit;
+}
+
 export function rayCircleListIntersect(centers, radii,  numObstacles, l_start, l_dir, max_t){
     let hit = new hitInfo();
     hit.t = max_t;

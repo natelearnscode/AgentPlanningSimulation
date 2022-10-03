@@ -66,7 +66,7 @@ export class Agent {
 
     // initializes a valid starting and goal position for agent
     initStartAndGoalPos(circlePos, circleRad, numObstacles, width, height) {
-        console.log("initializing start and goal for agent");
+        //console.log("initializing start and goal for agent");
         // add radius of agent to each obstacle radius
         let radiiAdded = [...circleRad];
         for(let i =0; i < numObstacles; i++) {
@@ -82,7 +82,7 @@ export class Agent {
 
     // generating a probablistic road map for agent
     generatePRM(numNodes, circleCenters, circleRadii, numObstacles, width, height) {
-        console.log("generating PRM");
+        //console.log("generating PRM");
         // add radius of agent to each obstacle radius
         let radiiAdded = [...circleRadii];
         for(let i =0; i < numObstacles; i++) {
@@ -96,7 +96,7 @@ export class Agent {
         this.connectNeighbors(circleCenters, radiiAdded, numObstacles)
 
         // plan path
-        this.planPath(circleCenters, radiiAdded);
+        this.planPath(circleCenters, radiiAdded, numObstacles);
 
     }
 
@@ -116,7 +116,7 @@ export class Agent {
 
     //Set which nodes are connected to which neighbors (graph edges) based on PRM rules
     connectNeighbors(centers, radii, numObstacles){
-        console.log("connecting neighbors");
+        //console.log("connecting neighbors");
         for (let i = 0; i < this.numNodes; i++){
             this.neighbors[i] = [];  //Clear neighbors list
             for (let j = 0; j < this.numNodes; j++){
@@ -134,14 +134,14 @@ export class Agent {
 
     // method that plans a collision free path from the start position to the goal position
     planPath(centers, radii, numObstacles){
-        console.log("planning path");
+        //console.log("planning path");
         let path = [];
         
         let startID = this.closestNode(centers, radii, numObstacles, this.startPos);
         let goalID = this.closestNode(centers, radii, numObstacles, this.goalPos);
 
         if (startID == -1 || goalID == -1) {
-          path.add(0,-1);;
+          path = [];
           return path;
         }
         
@@ -342,12 +342,37 @@ export class Agent {
             return acc; //if within certain threshold no other force is applied
         }
 
-        // TODO: Compute avoidance forces for other agents
+        // Compute avoidance forces for other agents
         for(let i = 0; i < agents.length; i++) {
             if(i == this.id) continue;
             let ttc = this.computeTTC(agents[i].pos,agents[i].velocity, agents[i].radius);
-            
-            //console.log(agents[i]);
+            //console.log("ttc of ", ttc.hit);
+            if(ttc.hit && ttc.t != -1) { // if we're going to collide                    
+                let futurePos_this = new THREE.Vector2();
+                let addAmount_this = new THREE.Vector2();
+                addAmount_this.copy(this.velocity);
+                addAmount_this.multiplyScalar(ttc.t);
+                futurePos_this.addVectors(this.pos, addAmount_this);
+
+                let futurePos_other = new THREE.Vector2();
+                let addAmount_other = new THREE.Vector2();
+                addAmount_other.copy(agents[i].velocity);
+                addAmount_other.multiplyScalar(ttc.t);
+                futurePos_other.addVectors(agents[i].pos, addAmount_other);
+                
+                //console.log(agents[i]);
+                let avoidDir = new THREE.Vector2();
+                avoidDir.subVectors(futurePos_this, futurePos_other).normalize();
+                avoidDir.multiplyScalar(1/ttc.t)
+                let avoidForce = avoidDir;
+                avoidForce.multiplyScalar(this.k_avoid);
+
+                if (ttc.hit && ttc.t > 0){
+                    //console.log("agent " , this.id, " moving away from agent ", agents[i].id, " with force of ", avoidForce.length());
+                    acc.add(avoidForce);
+                }
+            }
+
         }
 
         // TODO: Compute avoidance force for obstacles
@@ -359,8 +384,12 @@ export class Agent {
 
     }
 
-    computeTTC() {
-        return 1;
+    computeTTC(otherPos, otherVel, otherRadius) {
+        let combinedRadius = this.radius+otherRadius;
+        let relativeVelocity = new THREE.Vector2();
+        relativeVelocity.subVectors(this.velocity, otherVel);
+        let ttc = COLLISIONS.rayCircleIntersectTime(otherPos, combinedRadius, this.pos, relativeVelocity);
+        return ttc;
     }
 
     update(agents, centers, radii, numObstacles, dt) {

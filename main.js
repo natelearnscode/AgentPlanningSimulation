@@ -6,7 +6,6 @@ import { Agent } from './agent.js';
 import * as STATS from './stats.js';
 
 const contentDiv = document.getElementById("content");
-console.log("div is ",contentDiv);
 
 const stats = STATS.default();
 contentDiv.appendChild(stats.dom)
@@ -15,6 +14,8 @@ contentDiv.appendChild(stats.dom)
 
 let renderer, scene, camera, controls;
 let gui;
+let raycaster = new THREE.Raycaster();
+let pointer = new THREE.Vector2();
 
 // Simulation Parameters /////////////////
 let parameters = {
@@ -27,6 +28,7 @@ let parameters = {
     k_avoid: 100,
     goalSpeed: 200,
     showPaths: true,
+    editMode: false,
     ResetSimulation: restart,
 }
 
@@ -57,12 +59,17 @@ window.onload=init;
 
 // function that initializes and runs simulation
 function init() {
-    console.log("setting up threejs scene");
+    //console.log("setting up threejs scene");
     //set up Threejs components
     setupThreejs();
 
     // set up GUI
     gui = new GUI();
+
+    //Edit Mode
+    const editModeFolder = gui.addFolder('EditMode');
+    editModeFolder.add(parameters, 'editMode');
+    editModeFolder.open();
 
     //environment parameters
     const parametersFolder = gui.addFolder('Parameters');
@@ -90,9 +97,13 @@ function init() {
 
 
 
+
     console.log("running simulation");
     // run the simulation
     runSimulation();
+
+    // render scene
+    render();
 }
 
 // function that initializes the obstacle and agent and runs the simulation
@@ -119,7 +130,6 @@ function runSimulation() {
 
     // add agents to scene
     for(let i = 0; i < parameters.numAgents; i++) {
-        console.log("creating agent id: ", i);
         let agent = new Agent();
 
         // set up agent
@@ -151,9 +161,6 @@ function runSimulation() {
     }
     
 
-    
-    // render scene
-    render();
 }
 
 //function that sets up all the threejs components for rendering a scene
@@ -161,7 +168,6 @@ function setupThreejs() {
     // set up renderer
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
-    console.log("inner width", contentDiv.clientWidth);
     renderer.setSize( contentDiv.clientWidth, contentDiv.clientHeight );
     renderer.setClearColor("#99FFFF");
     renderer.shadowMap.enabled = true;
@@ -181,6 +187,11 @@ function setupThreejs() {
     // set up listener for window resizing
     window.addEventListener( 'resize', onWindowResize );
 
+    // set up listener to track mouse movements
+    window.addEventListener( 'pointermove', onPointerMove );
+
+    // set up listener for click event
+    window.addEventListener('mousedown', onClick);
 
     // set up lights
     const light =  new THREE.PointLight( 0xffffff, 0.5 );
@@ -215,6 +226,103 @@ function onWindowResize() {
     render();
 }
 
+// function that runs each time mouse moves and calc mouse position
+function onPointerMove( event ) {
+	// calculate pointer position in normalized device coordinates
+	// (-1 to +1) for both components
+
+	pointer.x = ( event.clientX / contentDiv.clientWidth ) * 2 - 1;
+	pointer.y = - ( event.clientY / contentDiv.clientHeight ) * 2 + 1;
+}
+
+// function that runs each time mouse is clicked
+function onClick( event ) {
+    if(parameters.editMode) { // only allow adding/removing obstacles in edit mode
+        // raycast from mouse
+        raycaster.setFromCamera( pointer, camera );
+
+        if(event.button == 0) { // left click add obstacle
+            console.log("left click!");
+            // calculate objects intersecting the picking ray
+            const intersects = raycaster.intersectObject( floorMesh );
+            if(intersects.length != 0) {
+                
+                // create object
+                let radius = THREE.MathUtils.randFloat(10, 20);
+                let position = new THREE.Vector2(intersects[0].point.x, intersects[0].point.z);
+
+                const geometry = new THREE.CylinderGeometry( radius - 5, radius - 5, 40, 32 ); // make rendering radius smaller for better looking collision avoidance
+                const material = new THREE.MeshLambertMaterial( { color: "#a76c3c" } );
+                let sphere = new THREE.Mesh( geometry, material );
+                sphere.castShadow = true;
+                sphere.receiveShadow = true;
+        
+                sphere.position.set(position.x, obstacleUpVectorValue,  position.y);
+                obstaclePos.push(position);
+                obstacleRad.push(radius);
+                obstacleMeshes.push(sphere);
+                obstacleGeometries.push(geometry);
+                obstacleMaterials.push(material);
+                scene.add(sphere);
+
+                // regenerate agent PRM and paths
+                for(let i = 0; i < agents.length; i++) {
+                    let agent = agents[i];
+                    // set start pos to current position and keep same goal
+                    agent.startPos = agent.pos;
+
+                    // plan new path for agent
+                    //agent.generatePRM(agent.numNodes, obstaclePos, obstacleRad, obstaclePos.length, floorGeometry.width, floorGeometry.depth);
+                    
+                    let radiiAdded = [...obstacleRad];
+                    for(let i =0; i < obstacleRad.length; i++) {
+                        radiiAdded[i] += agent.radius;
+                    }
+                    
+                    agent.connectNeighbors(obstaclePos, radiiAdded, obstaclePos.length);
+                    agent.planPath(obstaclePos, radiiAdded, obstaclePos.length);
+                    
+                    // remove old path helpers
+                    for(let i = 0; i < agent.pathArrowHelpers.length; i++) {
+                        scene.remove( agent.pathArrowHelpers[i] );
+                    }
+                    agent.pathArrowHelpers = []
+
+                    // add agent path helpers to scene
+                    if(parameters.showPaths) {
+                        agent.generatePathArrowHelpers();
+                        for(let i = 0; i < agent.pathArrowHelpers.length; i++) {
+                            scene.add( agent.pathArrowHelpers[i] );
+                        }
+                    }
+                }
+            }
+        }
+        else if(event.button == 2) { // right click remove obstacle
+            // calculate objects intersecting the picking ray
+            const intersects = raycaster.intersectObjects( obstacleMeshes );
+            if(intersects.length != 0) {
+                let index = 0;
+                for(let i = 0; i < obstacleMeshes.length; i++) { //find index of obstacle
+                    if(obstacleMeshes[i] === intersects[ 0 ].object) {
+                        index = i;
+                        break;
+                    }
+                }
+                console.log("index is ", index);
+                //remove obstacle
+                obstacleGeometries.splice(index, 1);
+                obstacleMaterials.splice(index, 1);
+                scene.remove(obstacleMeshes[index]);
+                obstacleMeshes.splice(index, 1);
+                obstaclePos.splice(index, 1);
+                obstacleRad.splice(index, 1);
+            }
+        }
+    }
+
+}
+
 // function that is called every frame and renders the scene
 function render() {
     stats.begin();
@@ -224,6 +332,7 @@ function render() {
     let dt = 1/fps;
 
     controls.update();
+
 
     if(dt != Infinity) { // initially dt is infinity so need to account for this
         // update agents movement
@@ -241,7 +350,7 @@ function render() {
 
 // function that places obstacles randomly in the scene
 function placeRandomObstacles() {
-    console.log("generating random obstacles");
+    //console.log("generating random obstacles");
   
     //Initial obstacle position
     for (let i = 0; i < parameters.numObstacles; i++){
@@ -274,7 +383,6 @@ function placeRandomObstacles() {
 
 //function that restarts the simulation
 function restart () {
-    //TODO: fix for multiple agents
     console.log("reseting simulation");
     //clean up and reset floor
     scene.remove(floorMesh);
@@ -304,6 +412,8 @@ function restart () {
         }
         agent.reset();
         scene.remove(agent.mesh);
+        agent.geometry.dispose();
+        agent.material.dispose();
     }
 
     agents = [];

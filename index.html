@@ -9,11 +9,86 @@
 	<body>
 		<div id="content">
 		</div>
+		<h2>Controls</h2>
+		<p>
+			Click and drag to move the camera around the origin.
+			Using middle mouse scroll or pinching on a touchpad zooms the camera in and out.
+			Use the settings on the right side of the screen to change the settings of the simulation and restart the simulation. 
 
+		</p>
 		<hr>
 		<h1>Welcome</h1>
-		<p>This is my submission for my CSCI 5611 class's Project 1. Above you can see a live demo of the working code.</p>
+		<p>This is my submission for my CSCI 5611 class's Project 1. The intended goal was to implement agents moving through a cluttered environment without colliding with eachother or any obstacles. I implmented planning with the A* planning algorithm on a Probablistic Roadmap (PRM) for each agent. To avoid collisions with other agents time to collide (TTC) forces were implemented. Above you can see and interact with a live demo of the working code.</p>
 		<hr>
+		<h2> Features Implemented </h2>
+		<ul>
+			<li>
+				<h3>Single Agent Navigation</h3>
+				<p>feature 1 description</p>
+			</li>
+			<li>
+				<h3>3D Rendering & Camera: </h3>
+				<p>feature 1 description</p>
+			</li>
+			<li>
+				<h3>User Scenario Editing: </h3>
+				<p>feature 1 description</p>
+			</li>
+			<li>
+				<h3>Realtime User Interaction: </h3>
+				<p>feature 1 description</p>
+			</li>
+			<li>
+				<h3>Multiple Agents Planning: </h3>
+				<p>feature 1 description</p>
+			</li>
+			<li>
+				<h3>Challenge - Crowd Simulation : </h3>
+				<p>feature 1 description</p>
+			</li>
+		</ul>
+		<hr>
+		<h2> Link to Code </h2>
+		<p>
+			The source code can be found <a href="https://github.com/natelearnscode/AgentPlanningSimulation">Here.</a>
+		</p>
+		<hr>
+		<h2> List of Tools/Libraries Used </h2>
+		<p>
+			I thought it'd be cool to have a working simulation all within the browser so that it can be easily accesible for anyone to view and play with.
+			Therefore, I chose to do the second part of project one using ThreeJS.
+			To serve as a base, a lot of code was ported over from processing, but with changes made for ThreeJS and javascript. 
+			<ul>
+				<li>
+					<h3>Rendering</h3>
+					<p>For rendering the 3D scene, the ThreeJS library was used. </p> 
+				</li>
+				<li>
+					<h3>GUI</h3>
+					<p>The Dat.GUI library was used to create the parameters GUI for editing the parameters of the simulation. </p> 
+				</li>
+				<li>
+					<h3>Performance Statistics</h3>
+					<p> To Calculate the frames per second and various other performance statistics, the Stats.Js library was used. These statistics can be scene in the top left of the screen. </p> 
+				</li>
+				<li>
+					<h3>Local Server for Development/Testing</h3>
+					<p>
+						In order to run and test ThreeJS locally, it needs to be served by an http server.
+						I chose to use NodeJS to both download the source code for the various libraries and create a simple http server to run the app locally.
+						Usually, you would want to use a module bundler like webpack to bundle the source code, but to simplify the development process, I made it so the app runs as is from the root directory.
+						I made some minor edits in the source code for the various libraries I used, and I then moved them to the root directory.
+						These include three.module.js, dat.gui.module.js, OrbitControls.js, and stats.js. 
+						To run the code locally, the http-server needs to be install first.
+						Then running npx http-server should start a server that serves all the files in the root directory.
+					</p>
+				</li>
+			</ul>
+		</p>
+		<hr>
+		<h2> Difficulties During Development </h2>
+		<hr>
+		<h2> Video Showcasing Simulation </h2>
 		<footer class="mt-auto py-3 text-center text-lg-start">
             <!-- Copyright -->
             <div class="text-center p-3">
